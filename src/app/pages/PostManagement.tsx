@@ -792,6 +792,8 @@ function createSampleRegularProducts(): RegularProduct[] {
       exchangeLimit: 1,
       exchangedCount: 127,
       description: '专业中医养生课程，包含四季养生、经络调理等内容',
+      qrcodeImage: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://example.com/course`,
+      productHint: '扫描下方二维码获取礼品',
       createdAt: '2026-04-19 14:30',
     },
     {
@@ -818,6 +820,8 @@ function createSampleRegularProducts(): RegularProduct[] {
       exchangeLimit: 1,
       exchangedCount: 54,
       description: '每月配送养生茶包，全年12次',
+      qrcodeImage: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://example.com/tea-card`,
+      productHint: '扫码添加客服领取年卡',
       createdAt: '2026-04-17 16:20',
     },
   ];

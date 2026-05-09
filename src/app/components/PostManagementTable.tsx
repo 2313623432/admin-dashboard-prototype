@@ -57,6 +57,7 @@ export interface Comment {
   authorName: string;
   authorAvatar: string;
   content: string;
+  images?: string[];
   timestamp: string;
   replies?: Comment[];
   isUser?: boolean;
@@ -117,13 +118,15 @@ export function PostManagementTable({
   const [editContent, setEditContent] = useState('');
   const [editImages, setEditImages] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [nicknameFilter, setNicknameFilter] = useState('');
+  const [userIdFilter, setUserIdFilter] = useState('');
+  const [dateFilterStart, setDateFilterStart] = useState('');
+  const [dateFilterEnd, setDateFilterEnd] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('全部');
   const [statusFilter, setStatusFilter] = useState<string>('全部');
-  const [characterFilter, setCharacterFilter] = useState<string[]>([]);
-  const [characterSearchOpen, setCharacterSearchOpen] = useState(false);
-  const [characterSearchQuery, setCharacterSearchQuery] = useState('');
   const [editingComment, setEditingComment] = useState<string | null>(null);
   const [editCommentContent, setEditCommentContent] = useState('');
+  const [editCommentImages, setEditCommentImages] = useState<string[]>([]);
 
   const handleSelectAll = () => {
     if (selectedRows.size === filteredPosts.length) {
@@ -175,6 +178,7 @@ export function PostManagementTable({
   const handleStartEditComment = (comment: Comment) => {
     setEditingComment(comment.id);
     setEditCommentContent(comment.content);
+    setEditCommentImages(comment.images || []);
   };
 
   const handleSaveEditComment = (postId: string, commentId: string) => {
@@ -188,6 +192,7 @@ export function PostManagementTable({
   const handleCancelEditComment = () => {
     setEditingComment(null);
     setEditCommentContent('');
+    setEditCommentImages([]);
   };
 
   const handleDeleteComment = (postId: string, commentId: string) => {
@@ -197,31 +202,40 @@ export function PostManagementTable({
     }
   };
 
-  // 获取所有角色列表（去重）
-  const allCharacters = Array.from(new Set(posts.map((post) => post.characterName)));
-
-  // 过滤角色列表（用于搜索）
-  const filteredCharacters = allCharacters.filter((char) =>
-    char.toLowerCase().includes(characterSearchQuery.toLowerCase())
-  );
-
-  // 切换角色选择
-  const toggleCharacterFilter = (character: string) => {
-    if (characterFilter.includes(character)) {
-      setCharacterFilter(characterFilter.filter((c) => c !== character));
-    } else {
-      setCharacterFilter([...characterFilter, character]);
-    }
-  };
-
   // 筛选帖子
   const filteredPosts = posts.filter((post) => {
-    // 搜索筛选
+    // 搜索帖子内容
     const matchesSearch =
       searchQuery === '' ||
-      post.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      post.characterName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (post.title && post.title.toLowerCase().includes(searchQuery.toLowerCase()));
+      post.content.toLowerCase().includes(searchQuery.toLowerCase());
+
+    // 搜索昵称
+    const matchesNickname =
+      nicknameFilter === '' ||
+      post.characterName.toLowerCase().includes(nicknameFilter.toLowerCase());
+
+    // 搜索用户ID
+    const matchesUserId =
+      userIdFilter === '';
+
+    // 日期筛选
+    let matchesDate = true;
+    if (dateFilterStart || dateFilterEnd) {
+      const postDateStr = post.timestamp.split(' ')[0]; // "05/09"
+      const [month, day] = postDateStr.split('/').map(Number);
+      const currentYear = new Date().getFullYear();
+      const postDate = new Date(currentYear, month - 1, day);
+
+      if (dateFilterStart) {
+        const startDate = new Date(dateFilterStart);
+        if (postDate < startDate) matchesDate = false;
+      }
+      if (dateFilterEnd) {
+        const endDate = new Date(dateFilterEnd);
+        endDate.setHours(23, 59, 59);
+        if (postDate > endDate) matchesDate = false;
+      }
+    }
 
     // 分区筛选
     const matchesCategory =
@@ -234,11 +248,7 @@ export function PostManagementTable({
       (statusFilter === '已发布' && post.status === 'published') ||
       (statusFilter === '已定时发布' && post.status === 'scheduled');
 
-    // 角色筛选
-    const matchesCharacter =
-      characterFilter.length === 0 || characterFilter.includes(post.characterName);
-
-    return matchesSearch && matchesCategory && matchesStatus && matchesCharacter;
+    return matchesSearch && matchesNickname && matchesUserId && matchesDate && matchesCategory && matchesStatus;
   });
 
   return (
@@ -330,15 +340,16 @@ export function PostManagementTable({
         </div>
 
         {/* 第二行：搜索和筛选 */}
-        <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg border border-gray-200">
-          {/* 搜索框 */}
-          <div className="relative flex-1 max-w-lg">
+        <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg border border-gray-200 flex-wrap">
+          {/* 搜索帖子内容 */}
+          <div className="relative flex-1 min-w-[200px] max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="搜索帖子内容或标题"
+              placeholder="搜索帖子内容(1-20个字符)"
+              maxLength={20}
               className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
             />
             {searchQuery && (
@@ -351,113 +362,61 @@ export function PostManagementTable({
             )}
           </div>
 
-          {/* 筛选器 */}
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-gray-600" />
-            <span className="text-sm text-gray-600 font-medium">筛选:</span>
+          {/* 搜索昵称 */}
+          <div className="relative flex-1 min-w-[160px] max-w-[220px]">
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              value={nicknameFilter}
+              onChange={(e) => setNicknameFilter(e.target.value)}
+              placeholder="搜索昵称"
+              maxLength={20}
+              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            />
           </div>
 
-          {/* 分区筛选 */}
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white min-w-[120px]"
-          >
-            <option value="全部">全部分区</option>
-            {CATEGORIES.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
+          {/* 搜索用户ID */}
+          <div className="relative flex-1 min-w-[160px] max-w-[220px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              value={userIdFilter}
+              onChange={(e) => setUserIdFilter(e.target.value)}
+              placeholder="搜索用户ID"
+              maxLength={20}
+              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            />
+          </div>
 
-          {/* 状态筛选 */}
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white min-w-[120px]"
-          >
-            <option value="全部">全部状态</option>
-            <option value="待发布">待发布</option>
-            <option value="已发布">已发布</option>
-            <option value="已定时发布">已定时发布</option>
-          </select>
-
-          {/* 角色筛选 */}
-          <Popover open={characterSearchOpen} onOpenChange={setCharacterSearchOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className="min-w-[120px] justify-between text-sm font-normal"
-              >
-                {characterFilter.length === 0 ? (
-                  '全部角色'
-                ) : (
-                  <span className="truncate">
-                    已选 {characterFilter.length} 个
-                  </span>
-                )}
-                <ChevronDown className="w-4 h-4 ml-2 opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-64 p-0" align="start">
-              <div className="p-2 border-b border-gray-200">
-                <div className="relative">
-                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    value={characterSearchQuery}
-                    onChange={(e) => setCharacterSearchQuery(e.target.value)}
-                    placeholder="搜索角色..."
-                    className="w-full pl-8 pr-3 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-              <div className="max-h-64 overflow-y-auto p-1">
-                {filteredCharacters.length === 0 ? (
-                  <div className="py-6 text-center text-sm text-gray-500">
-                    未找到角色
-                  </div>
-                ) : (
-                  filteredCharacters.map((character) => (
-                    <label
-                      key={character}
-                      className="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-100 rounded cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={characterFilter.includes(character)}
-                        onChange={() => toggleCharacterFilter(character)}
-                        className="w-4 h-4 rounded border-gray-300"
-                      />
-                      <span className="text-sm text-gray-700 flex-1">{character}</span>
-                    </label>
-                  ))
-                )}
-              </div>
-              {characterFilter.length > 0 && (
-                <div className="p-2 border-t border-gray-200">
-                  <Button
-                    onClick={() => setCharacterFilter([])}
-                    variant="outline"
-                    size="sm"
-                    className="w-full text-xs"
-                  >
-                    清除选择
-                  </Button>
-                </div>
-              )}
-            </PopoverContent>
-          </Popover>
+          {/* 日期筛选 */}
+          <div className="flex items-center gap-1">
+            <input
+              type="date"
+              value={dateFilterStart}
+              onChange={(e) => setDateFilterStart(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white w-[140px]"
+              placeholder="开始日期"
+            />
+            <span className="text-gray-400 text-sm">—</span>
+            <input
+              type="date"
+              value={dateFilterEnd}
+              onChange={(e) => setDateFilterEnd(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white w-[140px]"
+              placeholder="结束日期"
+            />
+          </div>
 
           {/* 重置按钮 */}
           <Button
             onClick={() => {
               setSearchQuery('');
+              setNicknameFilter('');
+              setUserIdFilter('');
+              setDateFilterStart('');
+              setDateFilterEnd('');
               setCategoryFilter('全部');
               setStatusFilter('全部');
-              setCharacterFilter([]);
-              setCharacterSearchQuery('');
               setSelectedRows(new Set());
             }}
             variant="outline"
@@ -794,6 +753,11 @@ export function PostManagementTable({
                                           className="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm"
                                           rows={2}
                                         />
+                                        <ImageEditCell
+                                          images={editCommentImages}
+                                          onImagesChange={setEditCommentImages}
+                                          postId={comment.id}
+                                        />
                                         <div className="flex items-center gap-2">
                                           <button
                                             onClick={() => handleSaveEditComment(post.id, comment.id)}
@@ -816,6 +780,23 @@ export function PostManagementTable({
                                         <div className="text-sm text-gray-700 mb-1">
                                           {comment.content}
                                         </div>
+                                        {comment.images && comment.images.length > 0 && (
+                                          <div className="flex flex-wrap gap-1 mb-2">
+                                            {comment.images.slice(0, 3).map((img, idx) => (
+                                              <img
+                                                key={idx}
+                                                src={img}
+                                                alt=""
+                                                className="w-16 h-16 object-cover rounded"
+                                              />
+                                            ))}
+                                            {comment.images.length > 3 && (
+                                              <div className="w-16 h-16 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-600">
+                                                +{comment.images.length - 3}
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
                                         <div className="flex items-center gap-3">
                                           <span className="text-xs text-gray-500">
                                             👍 {comment.likeCount || 0} 赞

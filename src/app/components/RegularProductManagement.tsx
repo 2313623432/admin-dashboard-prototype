@@ -43,6 +43,8 @@ export interface RegularProduct {
   exchangeLimit: number; // 0为不限
   exchangedCount?: number; // 已兑换数量
   description?: string;
+  qrcodeImage?: string;
+  productHint?: string;
   createdAt: string;
   isPinned?: boolean;
 }
@@ -91,6 +93,8 @@ export function RegularProductManagement({
     stock: '',
     exchangeLimit: '0',
     description: '',
+    qrcodeImage: '',
+    productHint: '',
   });
 
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
@@ -117,6 +121,27 @@ export function RegularProductManagement({
       reader.onload = (event) => {
         const imageUrl = event.target?.result as string;
         setFormData({ ...formData, image: imageUrl });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // 处理二维码上传
+  const handleQrcodeUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.match(/^image\/(jpeg|jpg|png)$/)) {
+        alert('请上传JPG或PNG格式的图片');
+        return;
+      }
+      if (file.size > 500 * 1024) {
+        alert('二维码图片大小不能超过500KB');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const imageUrl = event.target?.result as string;
+        setFormData({ ...formData, qrcodeImage: imageUrl });
       };
       reader.readAsDataURL(file);
     }
@@ -186,6 +211,8 @@ export function RegularProductManagement({
       stock: '999999',
       exchangeLimit: '',
       description: '',
+      qrcodeImage: '',
+      productHint: '',
     });
     setFormErrors({});
     setIsDialogOpen(true);
@@ -202,6 +229,8 @@ export function RegularProductManagement({
       stock: product.stock.toString(),
       exchangeLimit: product.exchangeLimit === 0 ? '' : product.exchangeLimit.toString(),
       description: product.description || '',
+      qrcodeImage: product.qrcodeImage || '',
+      productHint: product.productHint || '',
     });
     setFormErrors({});
     setIsDialogOpen(true);
@@ -278,6 +307,8 @@ export function RegularProductManagement({
       stock: parseInt(formData.stock),
       exchangeLimit: formData.exchangeLimit === '' ? 0 : parseInt(formData.exchangeLimit),
       description: formData.description || undefined,
+      qrcodeImage: formData.type === 'virtual' ? formData.qrcodeImage : undefined,
+      productHint: formData.type === 'virtual' && formData.productHint.trim() ? formData.productHint.trim() : undefined,
       status: 'offline' as const,
     };
 
@@ -542,6 +573,53 @@ export function RegularProductManagement({
                       {formData.description.length}/50
                     </p>
                   </div>
+
+                  {/* 虚拟商品专属：二维码和提示 */}
+                  {formData.type === 'virtual' && (
+                    <>
+                      {/* 商品二维码 */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          商品二维码
+                        </label>
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/jpg,image/png"
+                          onChange={handleQrcodeUpload}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <p className="text-gray-500 text-xs mt-1">支持JPG/PNG格式，大小不超过500KB</p>
+                        {formData.qrcodeImage && (
+                          <div className="mt-2">
+                            <img
+                              src={formData.qrcodeImage}
+                              alt="二维码预览"
+                              className="w-32 h-32 object-cover rounded border border-gray-300"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 商品提示 */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          商品提示
+                          <span className="text-gray-400 font-normal ml-1">（支持自定义）</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.productHint}
+                          onChange={(e) => setFormData({ ...formData, productHint: e.target.value })}
+                          placeholder="扫描下方二维码获取礼品"
+                          maxLength={30}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <p className="text-gray-500 text-xs mt-1">
+                          默认："扫描下方二维码获取礼品"，最多30字
+                        </p>
+                      </div>
+                    </>
+                  )}
 
                   {/* 按钮 */}
                   <div className="flex gap-3 pt-4">
