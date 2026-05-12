@@ -497,6 +497,16 @@ export function LogisticsManagement() {
           };
         })
       );
+      setOperationLogs(prev => [
+        {
+          id: `log-${Date.now()}`,
+          time: nowString(),
+          operator: '管理员',
+          action: `编辑了订单号为${fullForm.orderNo.trim()}的订单`,
+          orderNo: fullForm.orderNo.trim(),
+        },
+        ...prev,
+      ]);
     }
     setFullModal(null);
   };
@@ -527,7 +537,7 @@ export function LogisticsManagement() {
         id: `log-${Date.now()}`,
         time: nowString(),
         operator: '管理员',
-        action: '取消订单并退分',
+        action: `取消了订单号为${cancelTarget.orderNo}的订单`,
         orderNo: cancelTarget.orderNo,
         pointsRefunded: cancelTarget.points,
         reason: cancelReason.trim(),
@@ -565,7 +575,7 @@ export function LogisticsManagement() {
         id: `log-${Date.now()}`,
         time: nowString(),
         operator: '管理员',
-        action: '标记订单异常',
+        action: `标为异常订单号为${abnormalTarget.orderNo}的订单`,
         orderNo: abnormalTarget.orderNo,
         reason: abnormalReason.trim(),
       },
@@ -589,7 +599,7 @@ export function LogisticsManagement() {
         id: `log-${Date.now()}`,
         time: nowString(),
         operator: '管理员',
-        action: '取消异常状态',
+        action: `取消标为异常订单号为${order.orderNo}的订单`,
         orderNo: order.orderNo,
       },
       ...prev,
@@ -711,6 +721,17 @@ export function LogisticsManagement() {
       return updated;
     });
     setImportStep('result');
+    const importedOrders = importPreview.success.map(r => r.orderNo).join('、');
+    setOperationLogs(prev => [
+      {
+        id: `log-${Date.now()}`,
+        time: nowString(),
+        operator: '管理员',
+        action: `导入了${importPreview.success.length}条数据 订单号分别为${importedOrders}`,
+        orderNo: '',
+      },
+      ...prev,
+    ]);
   };
 
   const handleCloseImport = () => {
@@ -1347,7 +1368,7 @@ export function LogisticsManagement() {
             <div className="flex items-center justify-between p-6 border-b border-gray-100 flex-shrink-0">
               <div>
                 <h3 className="font-semibold text-gray-900">操作日志</h3>
-                <p className="text-xs text-gray-400 mt-0.5">所有取消退分操作的永久记录</p>
+                <p className="text-xs text-gray-400 mt-0.5">所有操作的永久记录</p>
               </div>
               <button onClick={() => setShowLogs(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
                 <X className="w-5 h-5" />
@@ -1363,27 +1384,21 @@ export function LogisticsManagement() {
                 <table className="w-full text-sm">
                   <thead className="sticky top-0 bg-gray-50 border-b border-gray-100">
                     <tr>
-                      <th className="py-3 px-4 text-left font-medium text-gray-600 whitespace-nowrap">操作时间</th>
                       <th className="py-3 px-4 text-left font-medium text-gray-600 whitespace-nowrap">操作人</th>
-                      <th className="py-3 px-4 text-left font-medium text-gray-600 whitespace-nowrap">订单号</th>
-                      <th className="py-3 px-4 text-left font-medium text-gray-600 whitespace-nowrap">操作内容</th>
-                      <th className="py-3 px-4 text-left font-medium text-gray-600 whitespace-nowrap">取消原因</th>
-                      <th className="py-3 px-4 text-left font-medium text-gray-600 whitespace-nowrap">退还积分</th>
+                      <th className="py-3 px-4 text-left font-medium text-gray-600 whitespace-nowrap">时间</th>
+                      <th className="py-3 px-4 text-left font-medium text-gray-600 whitespace-nowrap">操作</th>
                     </tr>
                   </thead>
                   <tbody>
                     {operationLogs.map(log => (
                       <tr key={log.id} className="border-b border-gray-50 hover:bg-gray-50">
+                        <td className="py-3 px-4 text-gray-700 whitespace-nowrap">{log.operator}</td>
                         <td className="py-3 px-4 text-xs text-gray-500 whitespace-nowrap">{log.time}</td>
-                        <td className="py-3 px-4 text-gray-700">{log.operator}</td>
-                        <td className="py-3 px-4 font-mono text-xs text-gray-700 whitespace-nowrap">{log.orderNo}</td>
                         <td className="py-3 px-4 text-gray-700">
                           <span className={log.action.includes('失败') ? 'text-red-600' : ''}>{log.action}</span>
-                        </td>
-                        <td className="py-3 px-4 text-gray-500 text-xs max-w-[180px]">{log.reason ?? '—'}</td>
-                        <td className="py-3 px-4 whitespace-nowrap">
+                          {log.reason && <span className="text-gray-400 text-xs ml-2">（{log.reason}）</span>}
                           {log.pointsRefunded != null && (
-                            <span className="text-amber-600 font-medium">+{log.pointsRefunded.toLocaleString()}</span>
+                            <span className="text-amber-600 font-medium ml-2">退+{log.pointsRefunded.toLocaleString()}积分</span>
                           )}
                         </td>
                       </tr>

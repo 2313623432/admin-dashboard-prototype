@@ -586,12 +586,12 @@ export function RegularProductManagement({
                           type="text"
                           value={formData.productHint}
                           onChange={(e) => setFormData({ ...formData, productHint: e.target.value })}
-                          placeholder="点击下方链接获取，获取礼品"
+                          placeholder="点击下方链接，获取礼品"
                           maxLength={30}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                         <p className="text-gray-500 text-xs mt-1">
-                          默认："点击下方链接获取，获取礼品"，最多30字
+                          默认："点击下方链接，获取礼品"，最多30字
                         </p>
                       </div>
                     </>
@@ -736,6 +736,8 @@ export function RegularProductManagement({
                 <TableHead className="w-12">头图</TableHead>
                 <TableHead className="w-48">商品名称</TableHead>
                 <TableHead className="w-24">商品类型</TableHead>
+                <TableHead className="w-40">商品链接</TableHead>
+                <TableHead className="w-40">商品提示</TableHead>
                 <TableHead
                   className="w-24 cursor-pointer select-none hover:bg-gray-100"
                   onClick={() => handleSort('points')}
@@ -759,7 +761,7 @@ export function RegularProductManagement({
             <TableBody>
               {filteredProducts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={11} className="h-32 text-center text-gray-500">
+                  <TableCell colSpan={13} className="h-32 text-center text-gray-500">
                     {products.length === 0
                       ? '暂无商品，点击"新增商品"开始创建'
                       : '没有符合筛选条件的商品'}
@@ -828,6 +830,28 @@ export function RegularProductManagement({
                         <Package className="w-3 h-3 mr-1" />
                         {product.type === 'virtual' ? '虚拟' : '实体'}
                       </span>
+                    </TableCell>
+
+                    {/* 商品链接 */}
+                    <TableCell>
+                      {product.type === 'virtual' && product.productLink ? (
+                        <div className="text-xs text-blue-600 truncate max-w-[160px]" title={product.productLink}>
+                          {product.productLink}
+                        </div>
+                      ) : (
+                        <span className="text-gray-300 text-xs">—</span>
+                      )}
+                    </TableCell>
+
+                    {/* 商品提示 */}
+                    <TableCell>
+                      {product.type === 'virtual' && product.productHint ? (
+                        <div className="text-xs text-gray-600 truncate max-w-[160px]" title={product.productHint}>
+                          {product.productHint}
+                        </div>
+                      ) : (
+                        <span className="text-gray-300 text-xs">—</span>
+                      )}
                     </TableCell>
 
                     {/* 所需积分 */}
