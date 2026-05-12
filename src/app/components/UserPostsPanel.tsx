@@ -10,7 +10,6 @@ import {
 import { Button } from './ui/button';
 import {
   Search,
-  Filter,
   X,
   ChevronDown,
   ChevronRight,
@@ -20,11 +19,6 @@ import {
   MessageCircle,
   ThumbsUp,
 } from 'lucide-react';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from './ui/popover';
 
 export interface UserPost {
   id: string;
@@ -62,13 +56,11 @@ interface UserPostsPanelProps {
 export function UserPostsPanel({ posts }: UserPostsPanelProps) {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [searchKeyword, setSearchKeyword] = useState('');
-  const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
-  const [searchType, setSearchType] = useState<'all' | 'post' | 'comment'>('all');
-  const [userFilter, setUserFilter] = useState('');
-  const [dateRangeStart, setDateRangeStart] = useState('');
-  const [dateRangeEnd, setDateRangeEnd] = useState('');
+  const [nicknameFilter, setNicknameFilter] = useState('');
+  const [userIdFilter, setUserIdFilter] = useState('');
+  const [dateFilterStart, setDateFilterStart] = useState('');
+  const [dateFilterEnd, setDateFilterEnd] = useState('');
   const [showRealUserCommentsOnly, setShowRealUserCommentsOnly] = useState<{ [postId: string]: boolean }>({});
-  const [activeResultTab, setActiveResultTab] = useState<'posts' | 'comments'>('posts');
 
   // 切换展开/折叠
   const handleToggleExpand = (id: string) => {
@@ -110,63 +102,41 @@ export function UserPostsPanel({ posts }: UserPostsPanelProps) {
 
   // 筛选帖子
   const filteredPosts = posts.filter((post) => {
-    // 关键词搜索
+    // 关键词搜索（仅搜索帖子内容）
     if (searchKeyword.trim()) {
       const keyword = searchKeyword.toLowerCase();
-      const postMatch = post.content.toLowerCase().includes(keyword);
-      const commentMatch = post.comments.some((c) =>
-        c.content.toLowerCase().includes(keyword)
-      );
-
-      if (searchType === 'post' && !postMatch) return false;
-      if (searchType === 'comment' && !commentMatch) return false;
-      if (searchType === 'all' && !postMatch && !commentMatch) return false;
+      if (!post.content.toLowerCase().includes(keyword)) return false;
     }
 
-    // 用户筛选
-    if (userFilter.trim()) {
-      const userMatch =
-        post.userId.includes(userFilter) || post.userName.includes(userFilter);
-      if (!userMatch) return false;
+    // 昵称筛选
+    if (nicknameFilter.trim()) {
+      if (!post.userName.toLowerCase().includes(nicknameFilter.toLowerCase())) return false;
+    }
+
+    // 用户ID筛选
+    if (userIdFilter.trim()) {
+      if (!post.userId.toLowerCase().includes(userIdFilter.toLowerCase())) return false;
     }
 
     // 时间范围筛选
-    if (dateRangeStart) {
-      if (post.publishTime < dateRangeStart) return false;
+    if (dateFilterStart) {
+      if (post.publishTime < dateFilterStart) return false;
     }
-    if (dateRangeEnd) {
-      if (post.publishTime > dateRangeEnd) return false;
+    if (dateFilterEnd) {
+      if (post.publishTime > dateFilterEnd) return false;
     }
 
     return true;
   });
 
-  // 获取评论结果（仅当搜索评论时）
-  const getCommentResults = (): UserComment[] => {
-    if (!searchKeyword.trim() || searchType === 'post') return [];
-
-    const results: UserComment[] = [];
-    filteredPosts.forEach((post) => {
-      post.comments.forEach((comment) => {
-        if (comment.content.toLowerCase().includes(searchKeyword.toLowerCase())) {
-          results.push(comment);
-        }
-      });
-    });
-    return results;
-  };
-
-  const commentResults = getCommentResults();
-
   // 重置筛选
   const handleReset = () => {
     setSearchKeyword('');
-    setSearchType('all');
-    setUserFilter('');
-    setDateRangeStart('');
-    setDateRangeEnd('');
+    setNicknameFilter('');
+    setUserIdFilter('');
+    setDateFilterStart('');
+    setDateFilterEnd('');
     setShowRealUserCommentsOnly({});
-    setActiveResultTab('posts');
   };
 
   // 获取帖子的可见评论
@@ -180,17 +150,17 @@ export function UserPostsPanel({ posts }: UserPostsPanelProps) {
   return (
     <div className="space-y-4">
       {/* 搜索栏 */}
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 space-y-4">
-        {/* 第一行：搜索框和高级筛选 */}
-        <div className="flex items-center gap-3">
-          {/* 搜索框 */}
-          <div className="relative flex-1 max-w-2xl">
+      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 space-y-3">
+        {/* 搜索和筛选行 */}
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* 搜索帖子内容 */}
+          <div className="relative flex-1 min-w-[200px] max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
               value={searchKeyword}
               onChange={(e) => setSearchKeyword(e.target.value)}
-              placeholder="搜索帖子内容或评论内容（1-20个字符）"
+              placeholder="搜索帖子内容(1-20个字符)"
               maxLength={20}
               className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -204,74 +174,50 @@ export function UserPostsPanel({ posts }: UserPostsPanelProps) {
             )}
           </div>
 
-          {/* 高级筛选按钮 */}
-          <Popover open={showAdvancedFilter} onOpenChange={setShowAdvancedFilter}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="whitespace-nowrap">
-                <Filter className="w-4 h-4 mr-2" />
-                高级筛选
-                <ChevronDown className="w-4 h-4 ml-2" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80 p-4" align="end">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    内容类型
-                  </label>
-                  <select
-                    value={searchType}
-                    onChange={(e) => setSearchType(e.target.value as any)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="all">全部</option>
-                    <option value="post">帖子</option>
-                    <option value="comment">评论</option>
-                  </select>
-                </div>
+          {/* 搜索昵称 */}
+          <div className="relative flex-1 min-w-[160px] max-w-[220px]">
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              value={nicknameFilter}
+              onChange={(e) => setNicknameFilter(e.target.value)}
+              placeholder="搜索昵称"
+              maxLength={20}
+              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    用户ID/昵称
-                  </label>
-                  <input
-                    type="text"
-                    value={userFilter}
-                    onChange={(e) => setUserFilter(e.target.value)}
-                    placeholder="输入用户ID或昵称"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+          {/* 搜索用户ID */}
+          <div className="relative flex-1 min-w-[160px] max-w-[220px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              value={userIdFilter}
+              onChange={(e) => setUserIdFilter(e.target.value)}
+              placeholder="搜索用户ID"
+              maxLength={20}
+              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    发布时间范围
-                  </label>
-                  <div className="space-y-2">
-                    <input
-                      type="date"
-                      value={dateRangeStart}
-                      onChange={(e) => setDateRangeStart(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <input
-                      type="date"
-                      value={dateRangeEnd}
-                      onChange={(e) => setDateRangeEnd(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-
-                <Button
-                  onClick={() => setShowAdvancedFilter(false)}
-                  className="w-full bg-blue-600 hover:bg-blue-700"
-                >
-                  应用筛选
-                </Button>
-              </div>
-            </PopoverContent>
-          </Popover>
+          {/* 日期筛选 */}
+          <div className="flex items-center gap-1">
+            <input
+              type="date"
+              value={dateFilterStart}
+              onChange={(e) => setDateFilterStart(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white w-[140px]"
+              placeholder="开始日期"
+            />
+            <span className="text-gray-400 text-sm">—</span>
+            <input
+              type="date"
+              value={dateFilterEnd}
+              onChange={(e) => setDateFilterEnd(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white w-[140px]"
+              placeholder="结束日期"
+            />
+          </div>
 
           {/* 重置按钮 */}
           <Button onClick={handleReset} variant="outline" size="sm">
@@ -280,129 +226,15 @@ export function UserPostsPanel({ posts }: UserPostsPanelProps) {
           </Button>
         </div>
 
-        {/* 第二行：搜索结果统计 */}
+        {/* 搜索结果统计 */}
         {searchKeyword.trim() && (
-          <div className="flex items-center gap-4 text-sm">
-            <span className="text-gray-600">
-              共找到 {filteredPosts.length} 个帖子
-              {searchType !== 'post' && `, ${commentResults.length} 条评论`}
-            </span>
-            {(searchType === 'all' || searchType === 'comment') && commentResults.length > 0 && (
-              <div className="flex items-center gap-2 border-l border-gray-300 pl-4">
-                <button
-                  onClick={() => setActiveResultTab('posts')}
-                  className={`px-3 py-1 rounded-md transition-colors ${
-                    activeResultTab === 'posts'
-                      ? 'bg-blue-100 text-blue-700 font-medium'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  帖子结果 ({filteredPosts.length})
-                </button>
-                <button
-                  onClick={() => setActiveResultTab('comments')}
-                  className={`px-3 py-1 rounded-md transition-colors ${
-                    activeResultTab === 'comments'
-                      ? 'bg-blue-100 text-blue-700 font-medium'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  评论结果 ({commentResults.length})
-                </button>
-              </div>
-            )}
+          <div className="text-sm text-gray-600">
+            共找到 {filteredPosts.length} 个帖子
           </div>
         )}
       </div>
 
-      {/* 结果展示 */}
-      {searchKeyword.trim() && activeResultTab === 'comments' && commentResults.length > 0 ? (
-        /* 评论结果表格 */
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-32">评论ID</TableHead>
-                  <TableHead className="w-32">所属帖子ID</TableHead>
-                  <TableHead className="w-24">用户</TableHead>
-                  <TableHead className="min-w-[400px]">评论内容</TableHead>
-                  <TableHead className="w-32">发布时间</TableHead>
-                  <TableHead className="w-20">点赞数</TableHead>
-                  <TableHead className="w-24">类型</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {commentResults.map((comment) => (
-                  <TableRow key={comment.id} className="hover:bg-gray-50">
-                    <TableCell>
-                      <div className="text-xs text-gray-600 font-mono">{comment.id}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-xs text-blue-600 font-mono">{comment.postId}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center overflow-hidden flex-shrink-0">
-                          {comment.userAvatar ? (
-                            <img
-                              src={comment.userAvatar}
-                              alt={comment.userName}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <User className="w-4 h-4 text-white" />
-                          )}
-                        </div>
-                        <div className="text-xs">
-                          <div className="font-medium text-gray-900">{comment.userName}</div>
-                          <div className="text-gray-500 font-mono">{comment.userId}</div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm text-gray-700">
-                        {highlightKeyword(comment.content, searchKeyword)}
-                      </div>
-                      {comment.images && comment.images.length > 0 && (
-                        <div className="flex gap-1.5 mt-1.5 flex-wrap">
-                          {comment.images.map((img, idx) => (
-                            <img
-                              key={idx}
-                              src={img}
-                              alt={`评论图片${idx + 1}`}
-                              className="w-14 h-14 object-cover rounded border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity"
-                              onClick={() => window.open(img, '_blank')}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-xs text-gray-600">{comment.publishTime}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm text-gray-700 font-medium">{comment.likeCount}</div>
-                    </TableCell>
-                    <TableCell>
-                      {comment.isAI ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                          AI评论
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          真人评论
-                        </span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
-      ) : (
-        /* 帖子列表表格 */
+      {/* 帖子列表表格 */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <Table>
@@ -422,7 +254,7 @@ export function UserPostsPanel({ posts }: UserPostsPanelProps) {
                 {filteredPosts.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="h-32 text-center text-gray-500">
-                      {searchKeyword.trim() || userFilter.trim() || dateRangeStart || dateRangeEnd
+                      {searchKeyword.trim() || nicknameFilter.trim() || userIdFilter.trim() || dateFilterStart || dateFilterEnd
                         ? '当前筛选条件下无匹配结果，请调整筛选条件'
                         : '暂无用户帖子'}
                     </TableCell>
@@ -650,7 +482,6 @@ export function UserPostsPanel({ posts }: UserPostsPanelProps) {
             </Table>
           </div>
         </div>
-      )}
     </div>
   );
 }
