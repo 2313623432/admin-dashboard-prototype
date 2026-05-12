@@ -599,8 +599,12 @@ export function LogisticsManagement() {
   // ── export ────────────────────────────────────────────────────────────────
 
   const handleExport = () => {
-    if (filteredOrders.length > 5000) {
-      alert('导出数据量过大，请缩小筛选范围后重试');
+    if (selectedIds.length === 0) {
+      alert('请先选择需要导出的订单');
+      return;
+    }
+    if (selectedIds.length > 5000) {
+      alert('导出数据量过大，请缩小选择范围后重试');
       return;
     }
 
@@ -615,7 +619,8 @@ export function LogisticsManagement() {
       abnormal: '异常', cancelled: '已取消',
     };
 
-    const rows = filteredOrders.map(o => [
+    const selectedOrders = orders.filter(o => selectedIds.includes(o.id));
+    const rows = selectedOrders.map(o => [
       o.orderNo,
       o.userName,
       o.userPhone,
@@ -760,7 +765,7 @@ export function LogisticsManagement() {
               className="flex items-center gap-2 px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <Download className="w-4 h-4" />
-              导出全部
+              导出所选{selectedIds.length > 0 && ` (${selectedIds.length})`}
             </button>
             <button
               onClick={() => setShowLogs(true)}
