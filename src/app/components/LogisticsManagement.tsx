@@ -245,8 +245,15 @@ function createSampleOrders(): Order[] {
 
 type ImportStep = 'upload' | 'preview' | 'result';
 
+interface ImportRow {
+  orderNo: string; userName: string; userPhone: string; address: string;
+  productName: string; quantity: string; points: string; status: string;
+  courier: string; trackingNo: string; abnormalReason: string; cancelReason: string;
+  createdAt: string;
+}
+
 interface ImportPreview {
-  success: Array<{ orderNo: string; courier: string; trackingNo: string }>;
+  success: ImportRow[];
   failed: Array<{ row: number; orderNo: string; reason: string }>;
 }
 
@@ -322,6 +329,11 @@ export function LogisticsManagement() {
   const [cancelTarget, setCancelTarget] = useState<Order | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelReasonError, setCancelReasonError] = useState('');
+
+  // Abnormal order modal
+  const [abnormalTarget, setAbnormalTarget] = useState<Order | null>(null);
+  const [abnormalReason, setAbnormalReason] = useState('');
+  const [abnormalReasonError, setAbnormalReasonError] = useState('');
 
   // Import state
   const [importStep, setImportStep] = useState<ImportStep>('upload');
@@ -527,6 +539,63 @@ export function LogisticsManagement() {
     setCancelReasonError('');
   };
 
+  // ── abnormal order ──────────────────────────────────────────────────────
+
+  const openAbnormalDialog = (order: Order) => {
+    setAbnormalTarget(order);
+    setAbnormalReason('');
+    setAbnormalReasonError('');
+  };
+
+  const handleConfirmAbnormal = () => {
+    if (!abnormalTarget) return;
+    if (!abnormalReason.trim()) {
+      setAbnormalReasonError('请填写异常原因');
+      return;
+    }
+    setOrders(prev =>
+      prev.map(o =>
+        o.id === abnormalTarget.id
+          ? { ...o, status: 'abnormal' as OrderStatus, abnormalReason: abnormalReason.trim() }
+          : o
+      )
+    );
+    setOperationLogs(prev => [
+      {
+        id: `log-${Date.now()}`,
+        time: nowString(),
+        operator: '管理员',
+        action: '标记订单异常',
+        orderNo: abnormalTarget.orderNo,
+        reason: abnormalReason.trim(),
+      },
+      ...prev,
+    ]);
+    setAbnormalTarget(null);
+    setAbnormalReason('');
+    setAbnormalReasonError('');
+  };
+
+  const handleCancelAbnormal = (order: Order) => {
+    setOrders(prev =>
+      prev.map(o =>
+        o.id === order.id
+          ? { ...o, status: 'pending' as OrderStatus, abnormalReason: undefined }
+          : o
+      )
+    );
+    setOperationLogs(prev => [
+      {
+        id: `log-${Date.now()}`,
+        time: nowString(),
+        operator: '管理员',
+        action: '取消异常状态',
+        orderNo: order.orderNo,
+      },
+      ...prev,
+    ]);
+  };
+
   // ── export ────────────────────────────────────────────────────────────────
 
   const handleExport = () => {
@@ -534,7 +603,45 @@ export function LogisticsManagement() {
       alert('导出数据量过大，请缩小筛选范围后重试');
       return;
     }
-    alert(`已导出 ${filteredOrders.length} 条订单数据（含完整物流信息）`);
+
+    const headers = [
+      '订单号', '用户姓名', '手机号', '收货地址', '商品名称',
+      '兑换数量', '积分', '订单状态', '快递公司', '快递单号',
+      '异常原因', '取消原因', '下单时间',
+    ];
+
+    const statusLabel: Record<OrderStatus, string> = {
+      pending: '待发货', shipped: '已发货', delivered: '已完成',
+      abnormal: '异常', cancelled: '已取消',
+    };
+
+    const rows = filteredOrders.map(o => [
+      o.orderNo,
+      o.userName,
+      o.userPhone,
+      o.address,
+      o.productName,
+      String(o.quantity),
+      String(o.points),
+      statusLabel[o.status],
+      o.courier || '',
+      o.trackingNo || '',
+      o.abnormalReason || '',
+      o.cancelReason || '',
+      o.createdAt,
+    ]);
+
+    // BOM for Excel UTF-8 compatibility
+    const BOM = '﻿';
+    const csv = BOM + [headers, ...rows].map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `物流订单导出_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   // ── import ────────────────────────────────────────────────────────────────
@@ -554,13 +661,13 @@ export function LogisticsManagement() {
       setImportParsing(false);
       setImportPreview({
         success: [
-          { orderNo: 'ORD20260505001', courier: '顺丰速运', trackingNo: 'SF9988776655' },
-          { orderNo: 'ORD20260503018', courier: '中通快递', trackingNo: 'ZT1122334455' },
-          { orderNo: 'ORD20260504005', courier: '韵达快递', trackingNo: 'YD9876543210' },
+          { orderNo: 'ORD20260505001', userName: '周晓燕', userPhone: '189****5506', address: '南京市鼓楼区汉中路', productName: '养生茶包礼盒', quantity: '4', points: '1000', status: '已取消', courier: '顺丰速运', trackingNo: 'SF9988776655', abnormalReason: '', cancelReason: '用户主动申请取消', createdAt: '2026-05-05 07:30' },
+          { orderNo: 'ORD20260503018', userName: '陈志强', userPhone: '177****9904', address: '武汉市武昌区武汉大学旁', productName: '经络调理精油套装', quantity: '2', points: '1760', status: '待发货', courier: '中通快递', trackingNo: 'ZT1122334455', abnormalReason: '', cancelReason: '', createdAt: '2026-05-03 20:10' },
+          { orderNo: 'ORD20260501001', userName: '张明华', userPhone: '138****8801', address: '北京市朝阳区建国路88号', productName: '养生茶包礼盒', quantity: '2', points: '500', status: '已完成', courier: '韵达快递', trackingNo: 'YD9876543210', abnormalReason: '', cancelReason: '', createdAt: '2026-05-01 10:15' },
         ],
         failed: [
           { row: 4, orderNo: 'ORD99999999', reason: '订单号不存在' },
-          { row: 5, orderNo: 'ORD20260501001', reason: '该订单已发货，非待发货状态' },
+          { row: 5, orderNo: '', reason: '订单号为空' },
           { row: 6, orderNo: 'ORD20260502015', reason: '快递单号格式不合法（长度不足8位）' },
         ],
       });
@@ -570,19 +677,34 @@ export function LogisticsManagement() {
 
   const handleConfirmImport = () => {
     if (!importPreview) return;
-    setOrders(prev =>
-      prev.map(o => {
-        const match = importPreview.success.find(s => s.orderNo === o.orderNo);
-        if (!match) return o;
-        return {
-          ...o,
-          status: 'shipped' as OrderStatus,
-          courier: match.courier,
-          trackingNo: match.trackingNo,
-          logisticsUpdatedAt: nowString(),
-        };
-      })
-    );
+    const statusMap: Record<string, OrderStatus> = {
+      '待发货': 'pending', '已发货': 'shipped', '已完成': 'delivered',
+      '异常': 'abnormal', '已取消': 'cancelled',
+    };
+    setOrders(prev => {
+      const updated = [...prev];
+      importPreview.success.forEach(row => {
+        const idx = updated.findIndex(o => o.orderNo === row.orderNo);
+        if (idx !== -1) {
+          updated[idx] = {
+            ...updated[idx],
+            userName: row.userName,
+            userPhone: row.userPhone,
+            address: row.address,
+            productName: row.productName,
+            quantity: Number(row.quantity),
+            points: Number(row.points),
+            status: statusMap[row.status] || updated[idx].status,
+            courier: row.courier || undefined,
+            trackingNo: row.trackingNo || undefined,
+            logisticsUpdatedAt: (row.courier && row.trackingNo) ? nowString() : updated[idx].logisticsUpdatedAt,
+            abnormalReason: row.abnormalReason || undefined,
+            cancelReason: row.cancelReason || undefined,
+          };
+        }
+      });
+      return updated;
+    });
     setImportStep('result');
   };
 
@@ -592,10 +714,6 @@ export function LogisticsManagement() {
     setImportFile(null);
     setImportPreview(null);
     setImportParsing(false);
-  };
-
-  const handleDownloadTemplate = () => {
-    alert('模板下载成功！\n\n字段说明（均为必填）：\n• 订单号\n• 快递公司\n• 快递单号（8-30字符）\n\n模板格式固定，请勿修改表头。');
   };
 
   const displayStatuses: OrderStatus[] = ['pending', 'shipped', 'delivered', 'abnormal'];
@@ -776,12 +894,28 @@ export function LogisticsManagement() {
                       >
                         编辑
                       </button>
-                      {order.status !== 'cancelled' && (
+                      {order.status !== 'cancelled' && order.status !== 'abnormal' && (
                         <button
                           onClick={() => openCancelDialog(order)}
                           className="px-2 py-0.5 text-xs text-orange-600 hover:bg-orange-50 rounded transition-colors whitespace-nowrap"
                         >
                           取消
+                        </button>
+                      )}
+                      {order.status !== 'cancelled' && order.status !== 'abnormal' && (
+                        <button
+                          onClick={() => openAbnormalDialog(order)}
+                          className="px-2 py-0.5 text-xs text-red-600 hover:bg-red-50 rounded transition-colors whitespace-nowrap"
+                        >
+                          标记异常
+                        </button>
+                      )}
+                      {order.status === 'abnormal' && (
+                        <button
+                          onClick={() => handleCancelAbnormal(order)}
+                          className="px-2 py-0.5 text-xs text-green-600 hover:bg-green-50 rounded transition-colors whitespace-nowrap"
+                        >
+                          取消异常
                         </button>
                       )}
 
@@ -1157,6 +1291,50 @@ export function LogisticsManagement() {
         </div>
       )}
 
+      {/* ── Abnormal Order Modal ── */}
+      {abnormalTarget && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex items-start gap-4 mb-5">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="w-5 h-5 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">标记订单异常</h3>
+                  <p className="text-sm text-gray-500 mt-1 leading-relaxed">
+                    标记后订单状态将变为"异常"，请填写具体原因。
+                  </p>
+                </div>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-600 mb-5 space-y-1">
+                <div>订单号：<span className="font-mono font-medium">{abnormalTarget.orderNo}</span></div>
+                <div>用户：{abnormalTarget.userName} · {abnormalTarget.productName} ×{abnormalTarget.quantity}</div>
+              </div>
+              <div className="mb-5">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  异常原因 <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={abnormalReason}
+                  onChange={e => { setAbnormalReason(e.target.value); if (e.target.value.trim()) setAbnormalReasonError(''); }}
+                  placeholder="请填写异常原因（必填）..."
+                  className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400 resize-none ${abnormalReasonError ? 'border-red-400 ring-1 ring-red-400' : 'border-gray-200'}`}
+                />
+                {abnormalReasonError && <p className="text-xs text-red-500 mt-1">{abnormalReasonError}</p>}
+              </div>
+              <div className="flex gap-3 justify-end">
+                <button onClick={() => setAbnormalTarget(null)} className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">返回</button>
+                <button onClick={handleConfirmAbnormal} className="px-4 py-2 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium">
+                  确认标记异常
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Operation Log Modal ── */}
       {showLogs && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -1250,15 +1428,11 @@ export function LogisticsManagement() {
                       <ul className="space-y-1 text-xs leading-relaxed">
                         <li>• 仅超级管理员和物流运营人员可操作，权限不足将返回 403</li>
                         <li>• 单次导入上限 2000 条，文件大小 ≤ 10MB</li>
-                        <li>• 支持 .xlsx / .xls 格式，请使用标准模板，不可修改表头</li>
-                        <li>• 必填字段：订单号、快递公司、快递单号（8-30字符）</li>
+                        <li>• 支持 .xlsx / .xls 格式，表头须与导出文件一致</li>
+                        <li>• 所有状态的订单均可导入，导入格式与导出格式完全相同</li>
                       </ul>
                     </div>
                   </div>
-                  <button onClick={handleDownloadTemplate} className="flex items-center gap-2 px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                    <Download className="w-4 h-4" />
-                    下载导入模板
-                  </button>
                   <label className="block border-2 border-dashed border-gray-200 rounded-xl p-12 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/20 transition-colors">
                     {importParsing ? (
                       <div className="flex flex-col items-center gap-3 text-blue-500">
@@ -1300,18 +1474,28 @@ export function LogisticsManagement() {
                       <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                         <CheckCircle className="w-4 h-4 text-green-500" />成功行
                       </h4>
-                      <div className="border border-gray-100 rounded-lg overflow-hidden">
+                      <div className="border border-gray-100 rounded-lg overflow-x-auto">
                         <table className="w-full text-xs">
                           <thead className="bg-gray-50"><tr>
-                            <th className="py-2 px-3 text-left text-gray-500 font-medium">订单号</th>
-                            <th className="py-2 px-3 text-left text-gray-500 font-medium">快递公司</th>
-                            <th className="py-2 px-3 text-left text-gray-500 font-medium">快递单号</th>
+                            <th className="py-2 px-2 text-left text-gray-500 font-medium whitespace-nowrap">订单号</th>
+                            <th className="py-2 px-2 text-left text-gray-500 font-medium whitespace-nowrap">用户</th>
+                            <th className="py-2 px-2 text-left text-gray-500 font-medium whitespace-nowrap">商品</th>
+                            <th className="py-2 px-2 text-left text-gray-500 font-medium whitespace-nowrap">数量</th>
+                            <th className="py-2 px-2 text-left text-gray-500 font-medium whitespace-nowrap">积分</th>
+                            <th className="py-2 px-2 text-left text-gray-500 font-medium whitespace-nowrap">状态</th>
+                            <th className="py-2 px-2 text-left text-gray-500 font-medium whitespace-nowrap">快递公司</th>
+                            <th className="py-2 px-2 text-left text-gray-500 font-medium whitespace-nowrap">快递单号</th>
                           </tr></thead>
                           <tbody>{importPreview.success.map((row, i) => (
                             <tr key={i} className="border-t border-gray-50">
-                              <td className="py-2 px-3 font-mono">{row.orderNo}</td>
-                              <td className="py-2 px-3">{row.courier}</td>
-                              <td className="py-2 px-3 font-mono">{row.trackingNo}</td>
+                              <td className="py-2 px-2 font-mono whitespace-nowrap">{row.orderNo}</td>
+                              <td className="py-2 px-2 whitespace-nowrap">{row.userName}</td>
+                              <td className="py-2 px-2 whitespace-nowrap">{row.productName}</td>
+                              <td className="py-2 px-2">{row.quantity}</td>
+                              <td className="py-2 px-2">{row.points}</td>
+                              <td className="py-2 px-2 whitespace-nowrap">{row.status}</td>
+                              <td className="py-2 px-2 whitespace-nowrap">{row.courier}</td>
+                              <td className="py-2 px-2 font-mono whitespace-nowrap">{row.trackingNo}</td>
                             </tr>
                           ))}</tbody>
                         </table>

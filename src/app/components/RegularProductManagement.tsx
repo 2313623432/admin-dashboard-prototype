@@ -44,6 +44,7 @@ export interface RegularProduct {
   exchangedCount?: number; // 已兑换数量
   description?: string;
   qrcodeImage?: string;
+  productLink?: string;
   productHint?: string;
   createdAt: string;
   isPinned?: boolean;
@@ -93,7 +94,7 @@ export function RegularProductManagement({
     stock: '',
     exchangeLimit: '0',
     description: '',
-    qrcodeImage: '',
+    productLink: '',
     productHint: '',
   });
 
@@ -126,26 +127,6 @@ export function RegularProductManagement({
     }
   };
 
-  // 处理二维码上传
-  const handleQrcodeUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (!file.type.match(/^image\/(jpeg|jpg|png)$/)) {
-        alert('请上传JPG或PNG格式的图片');
-        return;
-      }
-      if (file.size > 500 * 1024) {
-        alert('二维码图片大小不能超过500KB');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const imageUrl = event.target?.result as string;
-        setFormData({ ...formData, qrcodeImage: imageUrl });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   // 筛选商品
   const filteredProducts = products
@@ -209,9 +190,9 @@ export function RegularProductManagement({
       type: 'virtual',
       points: '',
       stock: '999999',
-      exchangeLimit: '',
+      exchangeLimit: '1',
       description: '',
-      qrcodeImage: '',
+      productLink: '',
       productHint: '',
     });
     setFormErrors({});
@@ -229,7 +210,7 @@ export function RegularProductManagement({
       stock: product.stock.toString(),
       exchangeLimit: product.exchangeLimit === 0 ? '' : product.exchangeLimit.toString(),
       description: product.description || '',
-      qrcodeImage: product.qrcodeImage || '',
+      productLink: product.productLink || '',
       productHint: product.productHint || '',
     });
     setFormErrors({});
@@ -307,7 +288,7 @@ export function RegularProductManagement({
       stock: parseInt(formData.stock),
       exchangeLimit: formData.exchangeLimit === '' ? 0 : parseInt(formData.exchangeLimit),
       description: formData.description || undefined,
-      qrcodeImage: formData.type === 'virtual' ? formData.qrcodeImage : undefined,
+      productLink: formData.type === 'virtual' && formData.productLink.trim() ? formData.productLink.trim() : undefined,
       productHint: formData.type === 'virtual' && formData.productHint.trim() ? formData.productHint.trim() : undefined,
       status: 'offline' as const,
     };
@@ -436,7 +417,8 @@ export function RegularProductManagement({
                             setFormData({
                               ...formData,
                               type: e.target.value as any,
-                              stock: e.target.value === 'virtual' ? '999999' : formData.stock
+                              stock: e.target.value === 'virtual' ? '999999' : formData.stock,
+                              exchangeLimit: e.target.value === 'virtual' ? '1' : formData.exchangeLimit,
                             });
                           }}
                           className="mr-2"
@@ -506,14 +488,16 @@ export function RegularProductManagement({
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       兑换限制
-                      <span className="text-gray-400 font-normal ml-1">（不填则不限）</span>
+                      <span className="text-gray-400 font-normal ml-1">
+                        {formData.type === 'virtual' ? '（虚拟商品每人限兑1次）' : '（不填则不限）'}
+                      </span>
                     </label>
                     <input
                       type="number"
                       min="1"
                       value={formData.exchangeLimit}
                       onChange={(e) => setFormData({ ...formData, exchangeLimit: e.target.value })}
-                      placeholder="不填表示不限次数"
+                      placeholder={formData.type === 'virtual' ? '每人限兑1次' : '不填表示不限次数'}
                       className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                         formErrors.exchangeLimit ? 'border-red-500' : 'border-gray-300'
                       }`}
@@ -574,30 +558,22 @@ export function RegularProductManagement({
                     </p>
                   </div>
 
-                  {/* 虚拟商品专属：二维码和提示 */}
+                  {/* 虚拟商品专属：商品链接和提示 */}
                   {formData.type === 'virtual' && (
                     <>
-                      {/* 商品二维码 */}
+                      {/* 商品链接 */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          商品二维码
+                          商品链接
                         </label>
                         <input
-                          type="file"
-                          accept="image/jpeg,image/jpg,image/png"
-                          onChange={handleQrcodeUpload}
+                          type="text"
+                          value={formData.productLink}
+                          onChange={(e) => setFormData({ ...formData, productLink: e.target.value })}
+                          placeholder="请输入商品跳转链接（如 https://...）"
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
-                        <p className="text-gray-500 text-xs mt-1">支持JPG/PNG格式，大小不超过500KB</p>
-                        {formData.qrcodeImage && (
-                          <div className="mt-2">
-                            <img
-                              src={formData.qrcodeImage}
-                              alt="二维码预览"
-                              className="w-32 h-32 object-cover rounded border border-gray-300"
-                            />
-                          </div>
-                        )}
+                        <p className="text-gray-500 text-xs mt-1">用户兑换后可点击链接跳转</p>
                       </div>
 
                       {/* 商品提示 */}
@@ -610,12 +586,12 @@ export function RegularProductManagement({
                           type="text"
                           value={formData.productHint}
                           onChange={(e) => setFormData({ ...formData, productHint: e.target.value })}
-                          placeholder="扫描下方二维码获取礼品"
+                          placeholder="点击下方链接获取，获取礼品"
                           maxLength={30}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                         <p className="text-gray-500 text-xs mt-1">
-                          默认："扫描下方二维码获取礼品"，最多30字
+                          默认："点击下方链接获取，获取礼品"，最多30字
                         </p>
                       </div>
                     </>

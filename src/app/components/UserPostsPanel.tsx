@@ -245,6 +245,7 @@ export function UserPostsPanel({ posts }: UserPostsPanelProps) {
                   <TableHead className="w-24">用户</TableHead>
                   <TableHead className="w-48">标题</TableHead>
                   <TableHead className="min-w-[300px]">帖子内容</TableHead>
+                  <TableHead className="w-24">图片</TableHead>
                   <TableHead className="w-32">发布时间</TableHead>
                   <TableHead className="w-20">点赞数</TableHead>
                   <TableHead className="w-20">评论数</TableHead>
@@ -253,7 +254,7 @@ export function UserPostsPanel({ posts }: UserPostsPanelProps) {
               <TableBody>
                 {filteredPosts.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="h-32 text-center text-gray-500">
+                    <TableCell colSpan={9} className="h-32 text-center text-gray-500">
                       {searchKeyword.trim() || nicknameFilter.trim() || userIdFilter.trim() || dateFilterStart || dateFilterEnd
                         ? '当前筛选条件下无匹配结果，请调整筛选条件'
                         : '暂无用户帖子'}
@@ -333,18 +334,24 @@ export function UserPostsPanel({ posts }: UserPostsPanelProps) {
                                 ? post.content.substring(0, 100) + '...'
                                 : post.content}
                             </div>
-                            {post.images && post.images.length > 0 && (
-                              <div className="flex gap-1.5 mt-2 flex-wrap">
+                          </TableCell>
+
+                          {/* 图片 */}
+                          <TableCell>
+                            {post.images && post.images.length > 0 ? (
+                              <div className="flex gap-1 flex-wrap">
                                 {post.images.map((img, idx) => (
                                   <img
                                     key={idx}
                                     src={img}
-                                    alt={`帖子图片${idx + 1}`}
-                                    className="w-16 h-16 object-cover rounded border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity"
+                                    alt={`图片${idx + 1}`}
+                                    className="w-12 h-12 object-cover rounded border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity"
                                     onClick={() => window.open(img, '_blank')}
                                   />
                                 ))}
                               </div>
+                            ) : (
+                              <span className="text-gray-300 text-xs">—</span>
                             )}
                           </TableCell>
 
@@ -376,7 +383,7 @@ export function UserPostsPanel({ posts }: UserPostsPanelProps) {
                         {/* 展开的评论区域 */}
                         {expandedRows.has(post.id) && post.comments.length > 0 && (
                           <TableRow>
-                            <TableCell colSpan={8} className="bg-gray-50">
+                            <TableCell colSpan={9} className="bg-gray-50">
                               <div className="py-4 px-8 space-y-3">
                                 {/* 评论筛选控制 */}
                                 <div className="flex items-center justify-between mb-3">
