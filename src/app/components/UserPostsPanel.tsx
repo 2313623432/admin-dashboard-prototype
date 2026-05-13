@@ -56,7 +56,6 @@ interface UserPostsPanelProps {
 export function UserPostsPanel({ posts }: UserPostsPanelProps) {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [searchKeyword, setSearchKeyword] = useState('');
-  const [nicknameFilter, setNicknameFilter] = useState('');
   const [userIdFilter, setUserIdFilter] = useState('');
   const [dateFilterStart, setDateFilterStart] = useState('');
   const [dateFilterEnd, setDateFilterEnd] = useState('');
@@ -108,11 +107,6 @@ export function UserPostsPanel({ posts }: UserPostsPanelProps) {
       if (!post.content.toLowerCase().includes(keyword)) return false;
     }
 
-    // 昵称筛选
-    if (nicknameFilter.trim()) {
-      if (!post.userName.toLowerCase().includes(nicknameFilter.toLowerCase())) return false;
-    }
-
     // 用户ID筛选
     if (userIdFilter.trim()) {
       if (!post.userId.toLowerCase().includes(userIdFilter.toLowerCase())) return false;
@@ -132,7 +126,6 @@ export function UserPostsPanel({ posts }: UserPostsPanelProps) {
   // 重置筛选
   const handleReset = () => {
     setSearchKeyword('');
-    setNicknameFilter('');
     setUserIdFilter('');
     setDateFilterStart('');
     setDateFilterEnd('');
@@ -172,19 +165,6 @@ export function UserPostsPanel({ posts }: UserPostsPanelProps) {
                 <X className="w-4 h-4" />
               </button>
             )}
-          </div>
-
-          {/* 搜索昵称 */}
-          <div className="relative flex-1 min-w-[160px] max-w-[220px]">
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              value={nicknameFilter}
-              onChange={(e) => setNicknameFilter(e.target.value)}
-              placeholder="搜索昵称"
-              maxLength={20}
-              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
           </div>
 
           {/* 搜索用户ID */}
@@ -255,7 +235,7 @@ export function UserPostsPanel({ posts }: UserPostsPanelProps) {
                 {filteredPosts.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={9} className="h-32 text-center text-gray-500">
-                      {searchKeyword.trim() || nicknameFilter.trim() || userIdFilter.trim() || dateFilterStart || dateFilterEnd
+                      {searchKeyword.trim() || userIdFilter.trim() || dateFilterStart || dateFilterEnd
                         ? '当前筛选条件下无匹配结果，请调整筛选条件'
                         : '暂无用户帖子'}
                     </TableCell>

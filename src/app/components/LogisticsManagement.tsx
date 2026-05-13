@@ -38,6 +38,7 @@ interface OperationLog {
   operator: string;
   action: string;
   orderNo: string;
+  orderNos?: string[];
   pointsRefunded?: number;
   reason?: string;
 }
@@ -316,6 +317,7 @@ export function LogisticsManagement() {
   const [showImport, setShowImport] = useState(false);
   const [operationLogs, setOperationLogs] = useState<OperationLog[]>([]);
   const [showLogs, setShowLogs] = useState(false);
+  const [expandedLogIds, setExpandedLogIds] = useState<Set<string>>(new Set());
 
   // Full order form modal (create or edit-all)
   const [fullModal, setFullModal] = useState<{ mode: 'create' | 'edit'; orderId?: string } | null>(null);
@@ -502,7 +504,7 @@ export function LogisticsManagement() {
           id: `log-${Date.now()}`,
           time: nowString(),
           operator: '管理员',
-          action: `编辑了订单号为${fullForm.orderNo.trim()}的订单`,
+          action: `对订单号为${fullForm.orderNo.trim()}的订单 进行了编辑操作`,
           orderNo: fullForm.orderNo.trim(),
         },
         ...prev,
@@ -537,7 +539,7 @@ export function LogisticsManagement() {
         id: `log-${Date.now()}`,
         time: nowString(),
         operator: '管理员',
-        action: `取消了订单号为${cancelTarget.orderNo}的订单`,
+        action: `对订单号为${cancelTarget.orderNo}的订单 进行了取消操作${cancelTarget.points > 0 ? `，${cancelTarget.points}积分已返还用户` : ''}`,
         orderNo: cancelTarget.orderNo,
         pointsRefunded: cancelTarget.points,
         reason: cancelReason.trim(),
@@ -575,7 +577,7 @@ export function LogisticsManagement() {
         id: `log-${Date.now()}`,
         time: nowString(),
         operator: '管理员',
-        action: `标为异常订单号为${abnormalTarget.orderNo}的订单`,
+        action: `对订单号为${abnormalTarget.orderNo}的订单 进行了标记异常操作`,
         orderNo: abnormalTarget.orderNo,
         reason: abnormalReason.trim(),
       },
@@ -599,7 +601,7 @@ export function LogisticsManagement() {
         id: `log-${Date.now()}`,
         time: nowString(),
         operator: '管理员',
-        action: `取消标为异常订单号为${order.orderNo}的订单`,
+        action: `对订单号为${order.orderNo}的订单 进行了取消异常操作`,
         orderNo: order.orderNo,
       },
       ...prev,
@@ -733,14 +735,15 @@ export function LogisticsManagement() {
       return updated;
     });
     setImportStep('result');
-    const importedOrders = importPreview.success.map(r => r.orderNo).join('、');
+    const importedOrderNos = importPreview.success.map(r => r.orderNo);
     setOperationLogs(prev => [
       {
         id: `log-${Date.now()}`,
         time: nowString(),
         operator: '管理员',
-        action: `导入了${importPreview.success.length}条数据 订单号分别为${importedOrders}`,
-        orderNo: '',
+        action: `导入了${importPreview.success.length}条数据，订单号为${importedOrderNos[0] || ''}`,
+        orderNo: importedOrderNos[0] || '',
+        orderNos: importedOrderNos.length > 1 ? importedOrderNos.slice(1) : undefined,
       },
       ...prev,
     ]);
@@ -1386,37 +1389,41 @@ export function LogisticsManagement() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {operationLogs.length === 0 ? (
                 <div className="py-16 text-center text-gray-400">
                   <AlertCircle className="w-10 h-10 mx-auto mb-3 opacity-30" />
                   <p className="text-sm">暂无操作记录</p>
                 </div>
               ) : (
-                <table className="w-full text-sm">
-                  <thead className="sticky top-0 bg-gray-50 border-b border-gray-100">
-                    <tr>
-                      <th className="py-3 px-4 text-left font-medium text-gray-600 whitespace-nowrap">操作人</th>
-                      <th className="py-3 px-4 text-left font-medium text-gray-600 whitespace-nowrap">时间</th>
-                      <th className="py-3 px-4 text-left font-medium text-gray-600 whitespace-nowrap">操作</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {operationLogs.map(log => (
-                      <tr key={log.id} className="border-b border-gray-50 hover:bg-gray-50">
-                        <td className="py-3 px-4 text-gray-700 whitespace-nowrap">{log.operator}</td>
-                        <td className="py-3 px-4 text-xs text-gray-500 whitespace-nowrap">{log.time}</td>
-                        <td className="py-3 px-4 text-gray-700">
-                          <span className={log.action.includes('失败') ? 'text-red-600' : ''}>{log.action}</span>
-                          {log.reason && <span className="text-gray-400 text-xs ml-2">（{log.reason}）</span>}
-                          {log.pointsRefunded != null && (
-                            <span className="text-amber-600 font-medium ml-2">退+{log.pointsRefunded.toLocaleString()}积分</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                operationLogs.map(log => {
+                  const isExpanded = expandedLogIds.has(log.id);
+                  return (
+                    <div key={log.id} className="bg-gray-50 rounded-lg p-3 text-sm">
+                      <div className="text-gray-700 leading-relaxed">
+                        {log.action}
+                        {log.reason && <span className="text-gray-400">（{log.reason}）</span>}
+                        {log.pointsRefunded != null && (
+                          <span className="text-amber-600 font-medium">退+{log.pointsRefunded.toLocaleString()}积分</span>
+                        )}
+                        {log.orderNos && log.orderNos.length > 0 && !isExpanded && (
+                          <button
+                            onClick={() => setExpandedLogIds(prev => new Set(prev).add(log.id))}
+                            className="text-blue-600 ml-1 hover:underline"
+                          >
+                            查看更多
+                          </button>
+                        )}
+                      </div>
+                      {isExpanded && log.orderNos && log.orderNos.length > 0 && (
+                        <div className="mt-1.5 text-xs text-gray-500">
+                          {log.orderNos.join('、')}
+                        </div>
+                      )}
+                      <div className="text-xs text-gray-400 mt-1">{log.time}</div>
+                    </div>
+                  );
+                })
               )}
             </div>
           </div>
