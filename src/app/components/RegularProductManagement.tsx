@@ -252,13 +252,15 @@ export function RegularProductManagement({
       errors.stock = '库存不能小于0';
     }
 
-    // 兑换限制（必填）
-    if (!formData.exchangeLimit || formData.exchangeLimit === '') {
-      errors.exchangeLimit = '请输入兑换限制';
-    } else {
-      const exchangeLimit = parseInt(formData.exchangeLimit);
-      if (isNaN(exchangeLimit) || exchangeLimit < 0) {
-        errors.exchangeLimit = '兑换限制须为非负整数';
+    // 兑换限制（虚拟商品必填）
+    if (formData.type === 'virtual') {
+      if (!formData.exchangeLimit || formData.exchangeLimit === '') {
+        errors.exchangeLimit = '请输入兑换限制';
+      } else {
+        const exchangeLimit = parseInt(formData.exchangeLimit);
+        if (isNaN(exchangeLimit) || exchangeLimit < 0) {
+          errors.exchangeLimit = '兑换限制须为非负整数';
+        }
       }
     }
 
@@ -489,10 +491,8 @@ export function RegularProductManagement({
                   {/* 兑换限制 */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      兑换限制 <span className="text-red-500">*</span>
-                      <span className="text-gray-400 font-normal ml-1">
-                        {formData.type === 'virtual' ? '（虚拟商品每人限兑1次）' : '（实物商品0表示不限）'}
-                      </span>
+                      兑换限制
+                      {formData.type === 'virtual' && <span className="text-red-500 ml-1">*</span>}
                     </label>
                     <input
                       type="number"

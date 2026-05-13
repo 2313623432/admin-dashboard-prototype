@@ -1488,8 +1488,6 @@ export function LogisticsManagement() {
                             <th className="py-2 px-2 text-left text-gray-500 font-medium whitespace-nowrap">用户</th>
                             <th className="py-2 px-2 text-left text-gray-500 font-medium whitespace-nowrap">商品</th>
                             <th className="py-2 px-2 text-left text-gray-500 font-medium whitespace-nowrap">数量</th>
-                            <th className="py-2 px-2 text-left text-gray-500 font-medium whitespace-nowrap">积分</th>
-                            <th className="py-2 px-2 text-left text-gray-500 font-medium whitespace-nowrap">状态</th>
                             <th className="py-2 px-2 text-left text-gray-500 font-medium whitespace-nowrap">快递公司</th>
                             <th className="py-2 px-2 text-left text-gray-500 font-medium whitespace-nowrap">快递单号</th>
                           </tr></thead>
@@ -1499,8 +1497,6 @@ export function LogisticsManagement() {
                               <td className="py-2 px-2 whitespace-nowrap">{row.userName}</td>
                               <td className="py-2 px-2 whitespace-nowrap">{row.productName}</td>
                               <td className="py-2 px-2">{row.quantity}</td>
-                              <td className="py-2 px-2">{row.points}</td>
-                              <td className="py-2 px-2 whitespace-nowrap">{row.status}</td>
                               <td className="py-2 px-2 whitespace-nowrap">{row.courier}</td>
                               <td className="py-2 px-2 font-mono whitespace-nowrap">{row.trackingNo}</td>
                             </tr>
