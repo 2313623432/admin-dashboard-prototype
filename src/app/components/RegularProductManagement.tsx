@@ -492,7 +492,11 @@ export function RegularProductManagement({
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       兑换限制
-                      {formData.type === 'virtual' && <span className="text-red-500 ml-1">*</span>}
+                      {formData.type === 'virtual' ? (
+                        <span className="text-red-500 ml-1">*</span>
+                      ) : (
+                        <span className="text-gray-400 font-normal ml-1">（兑换限制为空，则为不限）</span>
+                      )}
                     </label>
                     <input
                       type="number"
