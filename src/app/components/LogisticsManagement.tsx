@@ -630,31 +630,43 @@ export function LogisticsManagement() {
     };
 
     const selectedOrders = orders.filter(o => selectedIds.includes(o.id));
-    const rows = selectedOrders.map(o => [
-      o.orderNo,
-      o.userName,
-      o.userPhone,
-      o.address,
-      o.productName,
-      String(o.quantity),
-      String(o.points),
-      statusLabel[o.status],
-      o.courier || '',
-      o.trackingNo || '',
-      o.abnormalReason || '',
-      o.cancelReason || '',
-      o.createdAt,
-    ]);
 
-    // BOM for Excel UTF-8 compatibility
-    const BOM = '﻿';
-    const csv = BOM + [headers, ...rows].map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
+    // 构建 HTML 表格，Excel 可直接打开
+    const htmlRows = selectedOrders.map(o => `
+        <tr>
+          <td>${o.orderNo}</td>
+          <td>${o.userName}</td>
+          <td>${o.userPhone}</td>
+          <td>${o.address}</td>
+          <td>${o.productName}</td>
+          <td style="text-align:center">${o.quantity}</td>
+          <td style="text-align:center">${o.points}</td>
+          <td>${statusLabel[o.status]}</td>
+          <td>${o.courier || ''}</td>
+          <td style="white-space:nowrap">${o.trackingNo || ''}</td>
+          <td>${o.abnormalReason || ''}</td>
+          <td>${o.cancelReason || ''}</td>
+          <td style="white-space:nowrap">${o.createdAt}</td>
+        </tr>`).join('');
 
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const html = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head><meta charset="UTF-8" /><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>
+          <x:Name>物流订单</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+        </x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>
+        <body><table border="1">
+          <thead><tr>
+            ${headers.map(h => `<th style="background:#e5e7eb;font-weight:bold">${h}</th>`).join('')}
+          </tr></thead>
+          <tbody>${htmlRows}</tbody>
+        </table></body>
+      </html>`;
+
+    const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `物流订单导出_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `物流订单导出_${new Date().toISOString().slice(0, 10)}.xls`;
     a.click();
     URL.revokeObjectURL(url);
   };
