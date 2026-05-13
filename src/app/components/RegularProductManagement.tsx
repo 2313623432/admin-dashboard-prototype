@@ -434,9 +434,14 @@ export function RegularProductManagement({
                           type="radio"
                           value="physical"
                           checked={formData.type === 'physical'}
-                          onChange={(e) =>
-                            setFormData({ ...formData, type: e.target.value as any })
-                          }
+                          onChange={(e) => {
+                            setFormData({
+                              ...formData,
+                              type: e.target.value as any,
+                              stock: e.target.value === 'virtual' ? '999999' : formData.stock,
+                              exchangeLimit: e.target.value === 'virtual' ? '1' : '',
+                            });
+                          }}
                           className="mr-2"
                         />
                         <span className="text-sm">实体商品</span>
