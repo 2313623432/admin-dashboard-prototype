@@ -208,7 +208,7 @@ export function RegularProductManagement({
       type: product.type,
       points: product.points.toString(),
       stock: product.stock.toString(),
-      exchangeLimit: product.exchangeLimit.toString(),
+      exchangeLimit: product.type === 'physical' && product.exchangeLimit === 0 ? '' : product.exchangeLimit.toString(),
       description: product.description || '',
       productLink: product.productLink || '',
       productHint: product.productHint || '',
