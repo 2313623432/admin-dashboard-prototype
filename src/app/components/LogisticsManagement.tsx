@@ -88,7 +88,7 @@ function createSampleOrders(): Order[] {
       id: 'ord-001',
       orderNo: 'ORD20260501001',
       userName: '张明华',
-      userPhone: '138****8801',
+      userPhone: '13812348801',
       address: '北京市朝阳区建国路88号',
       productName: '养生茶包礼盒',
       quantity: 2,
@@ -100,7 +100,7 @@ function createSampleOrders(): Order[] {
       createdAt: '2026-05-01 10:15',
       timeline: [
         { time: '2026-05-05 14:23', location: '北京市朝阳区', description: '快件已签收，签收人：本人' },
-        { time: '2026-05-05 09:10', location: '北京市朝阳区建国路营业点', description: '派件中，快递员：李师傅，电话：136****0023' },
+        { time: '2026-05-05 09:10', location: '北京市朝阳区建国路营业点', description: '派件中，快递员：李师傅，电话：13600000023' },
         { time: '2026-05-04 22:30', location: '北京转运中心', description: '快件到达北京转运中心' },
         { time: '2026-05-03 15:45', location: '上海浦东转运中心', description: '快件已从上海浦东转运中心发出' },
         { time: '2026-05-01 11:30', location: '上海市浦东新区', description: '快件已揽收' },
@@ -110,7 +110,7 @@ function createSampleOrders(): Order[] {
       id: 'ord-002',
       orderNo: 'ORD20260502008',
       userName: '李秀芬',
-      userPhone: '139****6702',
+      userPhone: '13912346702',
       address: '上海市浦东新区张江高科园区',
       productName: '经络调理精油套装',
       quantity: 1,
@@ -130,7 +130,7 @@ function createSampleOrders(): Order[] {
       id: 'ord-003',
       orderNo: 'ORD20260502015',
       userName: '王建国',
-      userPhone: '155****3301',
+      userPhone: '15512343301',
       address: '广州市天河区珠江新城',
       productName: '本草养生礼盒',
       quantity: 3,
@@ -148,7 +148,7 @@ function createSampleOrders(): Order[] {
       id: 'ord-004',
       orderNo: 'ORD20260503002',
       userName: '赵美玲',
-      userPhone: '186****2208',
+      userPhone: '18612342208',
       address: '成都市锦江区春熙路',
       productName: '养生茶包年卡',
       quantity: 1,
@@ -169,7 +169,7 @@ function createSampleOrders(): Order[] {
       id: 'ord-004b',
       orderNo: 'ORD20260503009',
       userName: '吴晓燕',
-      userPhone: '182****4407',
+      userPhone: '18212344407',
       address: '深圳市南山区科技园',
       productName: '经络调理精油套装',
       quantity: 1,
@@ -181,7 +181,7 @@ function createSampleOrders(): Order[] {
       createdAt: '2026-05-03 11:00',
       timeline: [
         { time: '2026-05-05 16:10', location: '深圳市南山区科技园', description: '快件已送达，放至前台，等待取件' },
-        { time: '2026-05-05 09:45', location: '深圳南山区派送站', description: '派件中，快递员：王师傅，电话：159****0056' },
+        { time: '2026-05-05 09:45', location: '深圳南山区派送站', description: '派件中，快递员：王师傅，电话：15912340056' },
         { time: '2026-05-04 23:30', location: '深圳转运中心', description: '快件到达深圳转运中心' },
         { time: '2026-05-03 12:00', location: '上海市浦东新区', description: '快件已揽收' },
       ],
@@ -190,7 +190,7 @@ function createSampleOrders(): Order[] {
       id: 'ord-005',
       orderNo: 'ORD20260503018',
       userName: '陈志强',
-      userPhone: '177****9904',
+      userPhone: '17712349904',
       address: '武汉市武昌区武汉大学旁',
       productName: '经络调理精油套装',
       quantity: 2,
@@ -202,7 +202,7 @@ function createSampleOrders(): Order[] {
       id: 'ord-006',
       orderNo: 'ORD20260504005',
       userName: '孙丽华',
-      userPhone: '150****7703',
+      userPhone: '15012347703',
       address: '杭州市西湖区文三路',
       productName: '养生茶包礼盒',
       quantity: 1,
@@ -214,7 +214,7 @@ function createSampleOrders(): Order[] {
       id: 'ord-007',
       orderNo: 'ORD20260504022',
       userName: '刘明远',
-      userPhone: '134****1102',
+      userPhone: '13412341102',
       address: '西安市雁塔区大雁塔北广场',
       productName: '本草养生礼盒',
       quantity: 2,
@@ -232,7 +232,7 @@ function createSampleOrders(): Order[] {
       id: 'ord-008',
       orderNo: 'ORD20260505001',
       userName: '周晓燕',
-      userPhone: '189****5506',
+      userPhone: '18912345506',
       address: '南京市鼓楼区汉中路',
       productName: '养生茶包礼盒',
       quantity: 4,
@@ -696,9 +696,9 @@ export function LogisticsManagement() {
       setImportParsing(false);
       setImportPreview({
         success: [
-          { orderNo: 'ORD20260505001', userName: '周晓燕', userPhone: '189****5506', address: '南京市鼓楼区汉中路', productName: '养生茶包礼盒', quantity: '4', points: '1000', status: '已取消', courier: '顺丰速运', trackingNo: 'SF9988776655', abnormalReason: '', cancelReason: '用户主动申请取消', createdAt: '2026-05-05 07:30' },
-          { orderNo: 'ORD20260503018', userName: '陈志强', userPhone: '177****9904', address: '武汉市武昌区武汉大学旁', productName: '经络调理精油套装', quantity: '2', points: '1760', status: '待发货', courier: '中通快递', trackingNo: 'ZT1122334455', abnormalReason: '', cancelReason: '', createdAt: '2026-05-03 20:10' },
-          { orderNo: 'ORD20260501001', userName: '张明华', userPhone: '138****8801', address: '北京市朝阳区建国路88号', productName: '养生茶包礼盒', quantity: '2', points: '500', status: '已完成', courier: '韵达快递', trackingNo: 'YD9876543210', abnormalReason: '', cancelReason: '', createdAt: '2026-05-01 10:15' },
+          { orderNo: 'ORD20260505001', userName: '周晓燕', userPhone: '18912345506', address: '南京市鼓楼区汉中路', productName: '养生茶包礼盒', quantity: '4', points: '1000', status: '已取消', courier: '顺丰速运', trackingNo: 'SF9988776655', abnormalReason: '', cancelReason: '用户主动申请取消', createdAt: '2026-05-05 07:30' },
+          { orderNo: 'ORD20260503018', userName: '陈志强', userPhone: '17712349904', address: '武汉市武昌区武汉大学旁', productName: '经络调理精油套装', quantity: '2', points: '1760', status: '待发货', courier: '中通快递', trackingNo: 'ZT1122334455', abnormalReason: '', cancelReason: '', createdAt: '2026-05-03 20:10' },
+          { orderNo: 'ORD20260501001', userName: '张明华', userPhone: '13812348801', address: '北京市朝阳区建国路88号', productName: '养生茶包礼盒', quantity: '2', points: '500', status: '已完成', courier: '韵达快递', trackingNo: 'YD9876543210', abnormalReason: '', cancelReason: '', createdAt: '2026-05-01 10:15' },
         ],
         failed: [
           { row: 4, orderNo: 'ORD99999999', reason: '订单号不存在' },
@@ -811,15 +811,10 @@ export function LogisticsManagement() {
             </button>
             <button
               onClick={() => setShowLogs(true)}
-              className="flex items-center gap-2 px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors relative"
+              className="flex items-center gap-2 px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <AlertCircle className="w-4 h-4" />
               操作日志
-              {operationLogs.length > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
-                  {operationLogs.length > 9 ? '9+' : operationLogs.length}
-                </span>
-              )}
             </button>
           </div>
         </div>
@@ -1077,7 +1072,7 @@ export function LogisticsManagement() {
                       type="text"
                       value={fullForm.userPhone}
                       onChange={e => setField('userPhone', e.target.value)}
-                      placeholder="如 138****8801"
+                      placeholder="如 13812348801"
                       className={`${inputCls} ${formErrors.userPhone ? 'border-red-400 ring-1 ring-red-400' : ''}`}
                     />
                     {formErrors.userPhone && <p className="text-xs text-red-500 mt-1">{formErrors.userPhone}</p>}
