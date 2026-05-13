@@ -444,12 +444,6 @@ export function LogisticsManagement() {
     if (!fullForm.productName.trim()) errs.productName = '请填写商品名称';
     if (!fullForm.quantity || Number(fullForm.quantity) < 1) errs.quantity = '数量须≥1';
     if (!fullForm.points || Number(fullForm.points) < 0) errs.points = '请填写积分';
-    if (fullForm.status === 'abnormal' && !fullForm.abnormalReason.trim()) {
-      errs.abnormalReason = '状态为异常时必须填写异常原因';
-    }
-    if (fullForm.status === 'cancelled' && !fullForm.cancelReason.trim()) {
-      errs.cancelReason = '状态为已取消时必须填写取消原因';
-    }
     if (fullForm.trackingNo && (fullForm.trackingNo.length < 8 || fullForm.trackingNo.length > 30)) {
       errs.trackingNo = '快递单号长度须为8-30字符';
     }
@@ -477,13 +471,11 @@ export function LogisticsManagement() {
         productName: fullForm.productName.trim(),
         quantity: Number(fullForm.quantity),
         points: Number(fullForm.points),
-        status: fullForm.status,
+        status: 'pending' as OrderStatus,
         courier: fullForm.courier || undefined,
         trackingNo: fullForm.trackingNo || undefined,
         logisticsUpdatedAt: hasLogistics ? nowString() : undefined,
         createdAt: nowString(),
-        abnormalReason: fullForm.status === 'abnormal' ? fullForm.abnormalReason.trim() : undefined,
-        cancelReason: fullForm.status === 'cancelled' ? fullForm.cancelReason.trim() : undefined,
       };
       setOrders(prev => [newOrder, ...prev]);
     } else if (fullModal?.mode === 'edit' && fullModal.orderId) {
@@ -504,15 +496,12 @@ export function LogisticsManagement() {
             productName: fullForm.productName.trim(),
             quantity: Number(fullForm.quantity),
             points: Number(fullForm.points),
-            status: fullForm.status,
             courier: fullForm.courier || undefined,
             trackingNo: fullForm.trackingNo || undefined,
             logisticsUpdatedAt: hasLogistics ? nowString() : o.logisticsUpdatedAt,
             timeline: (fullForm.courier !== o.courier || fullForm.trackingNo !== o.trackingNo)
               ? undefined
               : o.timeline,
-            abnormalReason: fullForm.status === 'abnormal' ? fullForm.abnormalReason.trim() : undefined,
-            cancelReason: fullForm.status === 'cancelled' ? fullForm.cancelReason.trim() : undefined,
           };
         })
       );
@@ -946,12 +935,14 @@ export function LogisticsManagement() {
                       >
                         详情
                       </button>
-                      <button
-                        onClick={() => openEdit(order)}
-                        className="px-2 py-0.5 text-xs text-indigo-600 hover:bg-indigo-50 rounded transition-colors whitespace-nowrap"
-                      >
-                        编辑
-                      </button>
+                      {order.status !== 'cancelled' && (
+                        <button
+                          onClick={() => openEdit(order)}
+                          className="px-2 py-0.5 text-xs text-indigo-600 hover:bg-indigo-50 rounded transition-colors whitespace-nowrap"
+                        >
+                          编辑
+                        </button>
+                      )}
                       {order.status !== 'cancelled' && order.status !== 'abnormal' && (
                         <button
                           onClick={() => openCancelDialog(order)}
@@ -1064,48 +1055,6 @@ export function LogisticsManagement() {
                       {formErrors.points && <p className="text-xs text-red-500 mt-1">{formErrors.points}</p>}
                     </Field>
                   </div>
-                  <div className="col-span-2">
-                    <Field label="订单状态" required>
-                      <select
-                        value={fullForm.status}
-                        onChange={e => setField('status', e.target.value)}
-                        className={inputCls}
-                      >
-                        {ALL_STATUSES.map(s => (
-                          <option key={s} value={s}>{STATUS_CONFIG[s].label}</option>
-                        ))}
-                      </select>
-                    </Field>
-                  </div>
-                  {/* Abnormal reason — required when status is abnormal */}
-                  {fullForm.status === 'abnormal' && (
-                    <div className="col-span-2">
-                      <Field label="异常原因" required>
-                        <textarea
-                          rows={3}
-                          value={fullForm.abnormalReason}
-                          onChange={e => setField('abnormalReason', e.target.value)}
-                          placeholder="请详细描述异常情况，便于后续跟进处理..."
-                          className={`${inputCls} resize-none ${formErrors.abnormalReason ? 'border-red-400 ring-1 ring-red-400' : ''}`}
-                        ></textarea>
-                        {formErrors.abnormalReason && <p className="text-xs text-red-500 mt-1">{formErrors.abnormalReason}</p>}
-                      </Field>
-                    </div>
-                  )}
-                  {fullForm.status === 'cancelled' && (
-                    <div className="col-span-2">
-                      <Field label="取消原因" required>
-                        <textarea
-                          rows={3}
-                          value={fullForm.cancelReason}
-                          onChange={e => setField('cancelReason', e.target.value)}
-                          placeholder="请填写取消原因，将同步退还用户积分..."
-                          className={`${inputCls} resize-none ${formErrors.cancelReason ? 'border-red-400 ring-1 ring-red-400' : ''}`}
-                        ></textarea>
-                        {formErrors.cancelReason && <p className="text-xs text-red-500 mt-1">{formErrors.cancelReason}</p>}
-                      </Field>
-                    </div>
-                  )}
                 </div>
               </div>
 
