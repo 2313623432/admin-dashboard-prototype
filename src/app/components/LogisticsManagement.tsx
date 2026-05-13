@@ -309,8 +309,6 @@ export function LogisticsManagement() {
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [sortField, setSortField] = useState<'points' | 'createdAt' | 'quantity' | null>(null);
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
   // Modal states
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
@@ -369,12 +367,6 @@ export function LogisticsManagement() {
         (order.trackingNo && order.trackingNo.includes(searchText));
       const matchStatus = statusFilter === 'all' || order.status === statusFilter;
       return matchSearch && matchStatus;
-    })
-    .sort((a, b) => {
-      if (sortField === 'points') return sortDir === 'asc' ? a.points - b.points : b.points - a.points;
-      if (sortField === 'quantity') return sortDir === 'asc' ? a.quantity - b.quantity : b.quantity - a.quantity;
-      if (sortField === 'createdAt') return sortDir === 'asc' ? a.createdAt.localeCompare(b.createdAt) : b.createdAt.localeCompare(a.createdAt);
-      return b.createdAt.localeCompare(a.createdAt);
     });
 
   const allSelected =
@@ -387,20 +379,6 @@ export function LogisticsManagement() {
 
   const toggleSelect = (id: string, checked: boolean) => {
     setSelectedIds(prev => checked ? [...prev, id] : prev.filter(x => x !== id));
-  };
-
-  const handleSort = (field: 'points' | 'createdAt' | 'quantity') => {
-    if (sortField === field) {
-      setSortDir(prev => (prev === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortField(field);
-      setSortDir('desc');
-    }
-  };
-
-  const SortIndicator = ({ field }: { field: 'points' | 'createdAt' | 'quantity' }) => {
-    if (sortField !== field) return <span className="text-gray-300 ml-0.5 text-xs">↕</span>;
-    return <span className="text-blue-500 ml-0.5 text-xs">{sortDir === 'asc' ? '↑' : '↓'}</span>;
   };
 
   // ── view order detail ────────────────────────────────────────────────────
@@ -447,7 +425,8 @@ export function LogisticsManagement() {
     if (fullForm.trackingNo && (fullForm.trackingNo.length < 8 || fullForm.trackingNo.length > 30)) {
       errs.trackingNo = '快递单号长度须为8-30字符';
     }
-    if (fullForm.trackingNo && !fullForm.courier) errs.courier = '填写快递单号时快递公司必填';
+    if (fullForm.trackingNo && !fullForm.courier) errs.courier = '请选择快递公司';
+    if (fullForm.courier && !fullForm.trackingNo) errs.trackingNo = '请填写快递单号';
     setFormErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -846,20 +825,11 @@ export function LogisticsManagement() {
                 <th className="py-3 px-4 text-left font-medium text-gray-600 whitespace-nowrap">订单号</th>
                 <th className="py-3 px-4 text-left font-medium text-gray-600 whitespace-nowrap">用户信息</th>
                 <th className="py-3 px-4 text-left font-medium text-gray-600 whitespace-nowrap">商品</th>
-                <th
-                  className="py-3 px-4 text-left font-medium text-gray-600 whitespace-nowrap cursor-pointer hover:bg-gray-100 select-none"
-                  onClick={() => handleSort('quantity')}
-                >兑换数量<SortIndicator field="quantity" /></th>
-                <th
-                  className="py-3 px-4 text-left font-medium text-gray-600 whitespace-nowrap cursor-pointer hover:bg-gray-100 select-none"
-                  onClick={() => handleSort('points')}
-                >积分<SortIndicator field="points" /></th>
+                <th className="py-3 px-4 text-left font-medium text-gray-600 whitespace-nowrap">兑换数量</th>
+                <th className="py-3 px-4 text-left font-medium text-gray-600 whitespace-nowrap">积分</th>
                 <th className="py-3 px-4 text-left font-medium text-gray-600 whitespace-nowrap">状态</th>
                 <th className="py-3 px-4 text-left font-medium text-gray-600 whitespace-nowrap">快递信息</th>
-                <th
-                  className="py-3 px-4 text-left font-medium text-gray-600 whitespace-nowrap cursor-pointer hover:bg-gray-100 select-none"
-                  onClick={() => handleSort('createdAt')}
-                >下单时间<SortIndicator field="createdAt" /></th>
+                <th className="py-3 px-4 text-left font-medium text-gray-600 whitespace-nowrap">下单时间</th>
                 <th className="py-3 px-4 text-left font-medium text-gray-600 whitespace-nowrap">操作</th>
               </tr>
             </thead>
