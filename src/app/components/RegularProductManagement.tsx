@@ -92,7 +92,7 @@ export function RegularProductManagement({
     type: 'virtual' as 'virtual' | 'physical',
     points: '',
     stock: '',
-    exchangeLimit: '0',
+    exchangeLimit: '1',
     description: '',
     productLink: '',
     productHint: '',
@@ -208,7 +208,7 @@ export function RegularProductManagement({
       type: product.type,
       points: product.points.toString(),
       stock: product.stock.toString(),
-      exchangeLimit: product.exchangeLimit === 0 ? '' : product.exchangeLimit.toString(),
+      exchangeLimit: product.exchangeLimit.toString(),
       description: product.description || '',
       productLink: product.productLink || '',
       productHint: product.productHint || '',
@@ -252,8 +252,10 @@ export function RegularProductManagement({
       errors.stock = '库存不能小于0';
     }
 
-    // 兑换限制（可选，空值视为不限）
-    if (formData.exchangeLimit !== '' && formData.exchangeLimit !== null) {
+    // 兑换限制（必填）
+    if (!formData.exchangeLimit || formData.exchangeLimit === '') {
+      errors.exchangeLimit = '请输入兑换限制';
+    } else {
       const exchangeLimit = parseInt(formData.exchangeLimit);
       if (isNaN(exchangeLimit) || exchangeLimit < 0) {
         errors.exchangeLimit = '兑换限制须为非负整数';
@@ -286,7 +288,7 @@ export function RegularProductManagement({
       type: formData.type,
       points: parseInt(formData.points),
       stock: parseInt(formData.stock),
-      exchangeLimit: formData.exchangeLimit === '' ? 0 : parseInt(formData.exchangeLimit),
+      exchangeLimit: parseInt(formData.exchangeLimit) || 0,
       description: formData.description || undefined,
       productLink: formData.type === 'virtual' && formData.productLink.trim() ? formData.productLink.trim() : undefined,
       productHint: formData.type === 'virtual' && formData.productHint.trim() ? formData.productHint.trim() : undefined,
@@ -418,7 +420,7 @@ export function RegularProductManagement({
                               ...formData,
                               type: e.target.value as any,
                               stock: e.target.value === 'virtual' ? '999999' : formData.stock,
-                              exchangeLimit: e.target.value === 'virtual' ? '1' : formData.exchangeLimit,
+                              exchangeLimit: e.target.value === 'virtual' ? '1' : '',
                             });
                           }}
                           className="mr-2"
@@ -487,17 +489,17 @@ export function RegularProductManagement({
                   {/* 兑换限制 */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      兑换限制
+                      兑换限制 <span className="text-red-500">*</span>
                       <span className="text-gray-400 font-normal ml-1">
-                        {formData.type === 'virtual' ? '（虚拟商品每人限兑1次）' : '（不填则不限）'}
+                        {formData.type === 'virtual' ? '（虚拟商品每人限兑1次）' : '（实物商品0表示不限）'}
                       </span>
                     </label>
                     <input
                       type="number"
-                      min="1"
+                      min="0"
                       value={formData.exchangeLimit}
                       onChange={(e) => setFormData({ ...formData, exchangeLimit: e.target.value })}
-                      placeholder={formData.type === 'virtual' ? '每人限兑1次' : '不填表示不限次数'}
+                      placeholder="请输入兑换限制次数"
                       className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                         formErrors.exchangeLimit ? 'border-red-500' : 'border-gray-300'
                       }`}
